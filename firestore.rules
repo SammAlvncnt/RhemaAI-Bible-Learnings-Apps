@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Validations
+    function isValidUser(data) {
+      return data.keys().hasAll(['displayName', 'email']) &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.email is string && data.email.size() <= 100;
+    }
+
+    function isValidBookmark(data) {
+      return data.keys().hasAll(['userId', 'verseId', 'bookId', 'chapter', 'verse', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.verseId is string &&
+             data.bookId is string &&
+             data.chapter is int &&
+             data.verse is int &&
+             data.createdAt == request.time;
+    }
+
+    function isValidNote(data) {
+      return data.keys().hasAll(['userId', 'verseId', 'content', 'createdAt', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.verseId is string &&
+             data.content is string && data.content.size() <= 5000 &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    // Match Blocks
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false; // Users shouldn't list other users
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'streak', 'lastReadAt', 'preferredTranslation', 'preferredLanguage']);
+    }
+
+    match /books/{bookId} {
+      allow read: if true; // Publicly readable
+      allow write: if false; // System only
+    }
+
+    match /verses/{verseId} {
+      allow read: if true; // Publicly readable
+      allow write: if false; // System only
+    }
+
+    match /users/{userId}/bookmarks/{bookmarkId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidBookmark(incoming());
+      allow update: if false; // Bookmarks are typically immutable or deleted and recreated
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/notes/{noteId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidNote(incoming());
+      allow update: if isOwner(userId) && isValidNote(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt']) &&
+                    incoming().createdAt == existing().createdAt;
+      allow delete: if isOwner(userId);
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile and streak data",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "streak": { "type": "number" },
+        "lastReadAt": { "type": "string", "format": "date-time" },
+        "preferredTranslation": { "type": "string" },
+        "preferredLanguage": { "type": "string" }
+      }
+    },
+    "Book": {
+      "title": "Bible Book",
+      "description": "Metadata about a Bible book",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "testament": { "type": "string", "enum": ["OT", "NT"] },
+        "chapterCount": { "type": "number" }
+      }
+    },
+    "Verse": {
+      "title": "Bible Verse",
+      "description": "A single Bible verse content",
+      "type": "object",
+      "properties": {
+        "testament": { "type": "string" },
+        "bookName": { "type": "string" },
+        "bookId": { "type": "string" },
+        "chapter": { "type": "number" },
+        "verse": { "type": "number" },
+        "translation": { "type": "string" },
+        "language": { "type": "string" },
+        "text": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "crossReferences": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Bookmark": {
+      "title": "User Bookmark",
+      "description": "A bookmarked verse",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "verseId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "chapter": { "type": "number" },
+        "verse": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Note": {
+      "title": "User Note",
+      "description": "A personal note on a verse",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "verseId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Bible books collection"
+    },
+    "/verses/{verseId}": {
+      "schema": "Verse",
+      "description": "All Bible verses across translations"
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": "Bookmark",
+      "description": "User's bookmarked verses"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": "Note",
+      "description": "User's personal study notes"
+    }
+  }
+}
